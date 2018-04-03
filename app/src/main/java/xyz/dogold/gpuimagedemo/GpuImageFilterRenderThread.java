@@ -68,35 +68,6 @@ public class GpuImageFilterRenderThread extends HandlerThread {
         checkThread();
 
         mEglCore = new EglCore(null, 0);
-
-        mInputTextureId = GlUtil.createTextureObject(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
-        mInputSurfaceTexture = new SurfaceTexture(mInputTextureId);
-
-        mInputSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
-            @Override
-            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "updateTexImage, thread: " + Thread.currentThread().getName());
-                        mInputSurfaceTexture.updateTexImage();
-                        drawToOutput();
-                    }
-                });
-            }
-        });
-
-        mGLCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        mGLCubeBuffer.put(CUBE).position(0);
-
-        mGLTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        mGLTextureBuffer.put(TEXTURE_NO_ROTATION).position(0);
-
-        if (mCallback != null) mCallback.onInputSurfaceReady(new Surface(mInputSurfaceTexture));
     }
 
     private void drawToOutput() {
@@ -120,6 +91,37 @@ public class GpuImageFilterRenderThread extends HandlerThread {
             @Override
             public void run() {
                 doSetOutputSurface(surface, width, height);
+
+                // Create input surface
+                mInputTextureId = GlUtil.createTextureObject(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
+                mInputSurfaceTexture = new SurfaceTexture(mInputTextureId);
+
+                mGLCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
+                        .order(ByteOrder.nativeOrder())
+                        .asFloatBuffer();
+                mGLCubeBuffer.put(CUBE).position(0);
+
+                mGLTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
+                        .order(ByteOrder.nativeOrder())
+                        .asFloatBuffer();
+                mGLTextureBuffer.put(TEXTURE_NO_ROTATION).position(0);
+
+                if (mCallback != null)
+                    mCallback.onInputSurfaceReady(new Surface(mInputSurfaceTexture));
+
+                mInputSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+                    @Override
+                    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+//                                Log.d(TAG, "updateTexImage, thread: " + Thread.currentThread().getName());
+                                mInputSurfaceTexture.updateTexImage();
+                                drawToOutput();
+                            }
+                        });
+                    }
+                });
             }
         });
     }
@@ -132,6 +134,7 @@ public class GpuImageFilterRenderThread extends HandlerThread {
             public void run() {
                 if (mOutputWindowSurface != null) {
                     mOutputWindowSurface.release();
+                    mOutputWindowSurface = null;
                 }
             }
         });
@@ -181,6 +184,18 @@ public class GpuImageFilterRenderThread extends HandlerThread {
                 if (mOutputWidth > 0 && mOutputHeight > 0) {
                     mGpuImageFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
                 }
+            }
+        });
+    }
+
+    public void shutdown() {
+        checkRunning();
+
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mEglCore.release();
+                quitSafely();
             }
         });
     }

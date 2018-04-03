@@ -132,7 +132,7 @@ public final class EglCore {
         int[] values = new int[1];
         EGL14.eglQueryContext(mEGLDisplay, mEGLContext, EGL14.EGL_CONTEXT_CLIENT_VERSION,
                 values, 0);
-        Log.d(TAG, "EGLContext created, client version " + values[0]);
+        Log.d(TAG, "EGLContext created, client version " + values[0] + ", mGlVersion: " + mGlVersion);
     }
 
     /**
