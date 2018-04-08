@@ -2,22 +2,14 @@ package xyz.dogold.gpuimagedemo;
 
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
-import android.opengl.GLES30;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Surface;
 import android.view.TextureView;
 
-import jp.co.cyberagent.android.gpuimage.GPUImageAddBlendFilter;
-import jp.co.cyberagent.android.gpuimage.GPUImageBilateralFilter;
-import jp.co.cyberagent.android.gpuimage.GPUImageBoxBlurFilter;
-import jp.co.cyberagent.android.gpuimage.GPUImageColorInvertFilter;
-import jp.co.cyberagent.android.gpuimage.GPUImageEmbossFilter;
 import jp.co.cyberagent.android.gpuimage.GPUImageFilterGroup;
-import jp.co.cyberagent.android.gpuimage.GPUImageGammaFilter;
-import jp.co.cyberagent.android.gpuimage.GPUImageSepiaFilter;
-import xyz.dogold.gpuimagedemo.filters.GPUImageExtTexFilter;
+import xyz.dogold.gpuimagedemo.filters.GpuImageOesFilter;
 
 public class MainActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
     private GpuImageFilterRenderThread mGpuImageFilterRenderThread;
@@ -44,8 +36,8 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
             @Override
             public void onInputSurfaceReady(Surface surface) {
                 final GPUImageFilterGroup filterGroup = new GPUImageFilterGroup();
-                filterGroup.addFilter(new GPUImageExtTexFilter());
-                filterGroup.addFilter(new GPUImageSepiaFilter());
+                filterGroup.addFilter(new GpuImageOesFilter());
+//                filterGroup.addFilter(new GPUImageSepiaFilter());
 
                 mGpuImageFilterRenderThread.setFilter(filterGroup);
 
