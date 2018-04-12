@@ -83,6 +83,9 @@ public class GPUImageLookupFilter2 extends GPUImageTwoInputFilter2 {
 
     public void setIntensity(final float intensity) {
         mIntensity = intensity;
-        setFloat(mIntensityLocation, mIntensity);
+
+        // If we set intensity when not initialized, we got GL_UNSUPPORTED_OPERATION error
+        if (isInitialized())
+            setFloat(mIntensityLocation, mIntensity);
     }
 }
