@@ -10,8 +10,8 @@ public class GpuImageStickImageFilter extends GPUImageTwoInputFilter2 {
             "\n" +
             "void main()\n" +
             "{\n" +
-            "     vec4 t0 = texture2D(inputImageTexture, textureCoordinate);\n" +
-            "     vec4 t1 = texture2D(inputImageTexture2, textureCoordinate2);\n" +
+            "     highp vec4 t0 = texture2D(inputImageTexture, textureCoordinate);\n" +
+            "     highp vec4 t1 = texture2D(inputImageTexture2, textureCoordinate2);\n" +
             "     gl_FragColor = mix(t0, t1, t1.a);\n" +
             "}";
 

@@ -41,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
                 filter.setBitmap(BitmapFactory.decodeResource(getResources(), R.raw.kk));
                 mGpuImageFilterRenderThread.setFilter(filter);
 
+//                mGpuImageFilterRenderThread.setFilter(new GPUImageGrayscaleFilter());
+
                 mMediaPlayer.setSurface(surface);
 
                 mMediaPlayer.start();
