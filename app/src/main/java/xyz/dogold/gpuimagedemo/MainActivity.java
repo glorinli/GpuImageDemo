@@ -1,5 +1,6 @@
 package xyz.dogold.gpuimagedemo;
 
+import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -9,6 +10,8 @@ import android.view.Surface;
 import android.view.TextureView;
 
 import jp.co.cyberagent.android.gpuimage.GPUImageGrayscaleFilter;
+import xyz.dogold.gpuimagedemo.filters.GPUImageTwoInputFilter2;
+import xyz.dogold.gpuimagedemo.filters.GpuImageStickImageFilter;
 
 public class MainActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
     private GpuImageFilterRenderThread mGpuImageFilterRenderThread;
@@ -34,7 +37,9 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
         mGpuImageFilterRenderThread.setCallback(new GpuImageFilterRenderThread.Callback() {
             @Override
             public void onInputSurfaceReady(Surface surface, Surface oldSurface) {
-                mGpuImageFilterRenderThread.setFilter(new GPUImageGrayscaleFilter());
+                final GpuImageStickImageFilter filter = new GpuImageStickImageFilter();
+                filter.setBitmap(BitmapFactory.decodeResource(getResources(), R.raw.kk));
+                mGpuImageFilterRenderThread.setFilter(filter);
 
                 mMediaPlayer.setSurface(surface);
 
