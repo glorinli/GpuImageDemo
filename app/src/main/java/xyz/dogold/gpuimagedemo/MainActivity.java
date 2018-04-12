@@ -9,9 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Surface;
 import android.view.TextureView;
 
-import jp.co.cyberagent.android.gpuimage.GPUImageGrayscaleFilter;
-import xyz.dogold.gpuimagedemo.filters.GPUImageTwoInputFilter2;
-import xyz.dogold.gpuimagedemo.filters.GpuImageStickImageFilter;
+import xyz.dogold.gpuimagedemo.filters.GPUImageLookupFilter2;
 
 public class MainActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
     private GpuImageFilterRenderThread mGpuImageFilterRenderThread;
@@ -37,11 +35,15 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
         mGpuImageFilterRenderThread.setCallback(new GpuImageFilterRenderThread.Callback() {
             @Override
             public void onInputSurfaceReady(Surface surface, Surface oldSurface) {
-                final GpuImageStickImageFilter filter = new GpuImageStickImageFilter();
+                /*final GpuImageStickImageFilter filter = new GpuImageStickImageFilter();
                 filter.setBitmap(BitmapFactory.decodeResource(getResources(), R.raw.kk));
-                mGpuImageFilterRenderThread.setFilter(filter);
+                mGpuImageFilterRenderThread.setFilter(filter);*/
 
 //                mGpuImageFilterRenderThread.setFilter(new GPUImageGrayscaleFilter());
+
+                final GPUImageLookupFilter2 gpuImageLookupFilter2 = new GPUImageLookupFilter2();
+                gpuImageLookupFilter2.setBitmap(BitmapFactory.decodeResource(getResources(), R.raw.overlaymap));
+                mGpuImageFilterRenderThread.setFilter(gpuImageLookupFilter2);
 
                 mMediaPlayer.setSurface(surface);
 
