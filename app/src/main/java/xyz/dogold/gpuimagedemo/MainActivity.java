@@ -8,8 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Surface;
 import android.view.TextureView;
 
-import jp.co.cyberagent.android.gpuimage.GPUImageFilterGroup;
-import xyz.dogold.gpuimagedemo.filters.GpuImageOesFilter;
+import jp.co.cyberagent.android.gpuimage.GPUImageGrayscaleFilter;
 
 public class MainActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
     private GpuImageFilterRenderThread mGpuImageFilterRenderThread;
@@ -34,16 +33,17 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
 
         mGpuImageFilterRenderThread.setCallback(new GpuImageFilterRenderThread.Callback() {
             @Override
-            public void onInputSurfaceReady(Surface surface) {
-                final GPUImageFilterGroup filterGroup = new GPUImageFilterGroup();
-                filterGroup.addFilter(new GpuImageOesFilter());
-//                filterGroup.addFilter(new GPUImageSepiaFilter());
-
-                mGpuImageFilterRenderThread.setFilter(filterGroup);
+            public void onInputSurfaceReady(Surface surface, Surface oldSurface) {
+                mGpuImageFilterRenderThread.setFilter(new GPUImageGrayscaleFilter());
 
                 mMediaPlayer.setSurface(surface);
 
                 mMediaPlayer.start();
+            }
+
+            @Override
+            public void onInputSurfaceSizeChanged() {
+
             }
         });
 
@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
+        mGpuImageFilterRenderThread.setOutputSize(width, height);
     }
 
     @Override

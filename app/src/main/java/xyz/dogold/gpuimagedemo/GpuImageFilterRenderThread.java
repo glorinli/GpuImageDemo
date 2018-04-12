@@ -4,45 +4,41 @@ import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.util.Log;
 import android.view.Surface;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.List;
 
 import jp.co.cyberagent.android.gpuimage.GPUImageFilter;
+import jp.co.cyberagent.android.gpuimage.GPUImageFilterGroup;
+import xyz.dogold.gpuimagedemo.filters.GPUImageLookupFilter2;
+import xyz.dogold.gpuimagedemo.filters.GpuImageOesFilter;
 import xyz.dogold.gpuimagedemo.gles.EglCore;
 import xyz.dogold.gpuimagedemo.gles.GlUtil;
+import xyz.dogold.gpuimagedemo.gles.MatrixUtils;
 import xyz.dogold.gpuimagedemo.gles.WindowSurface;
-
-import static jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil.TEXTURE_NO_ROTATION;
 
 public class GpuImageFilterRenderThread extends HandlerThread {
     private static final String TAG = "RenderThread";
 
     private EglCore mEglCore;
 
-    private static final float[] CUBE = {
-            -1.0f, -1.0f,
-            1.0f, -1.0f,
-            -1.0f, 1.0f,
-            1.0f, 1.0f,
-    };
-
     private int mInputTextureId = -1;
     private SurfaceTexture mInputSurfaceTexture;
     private FloatBuffer mGLCubeBuffer;
     private FloatBuffer mGLTextureBuffer;
 
-    private GPUImageFilter mGpuImageFilter;
+    private GPUImageFilterGroup mGPUImageFilterGroup;
+    private GpuImageOesFilter mGpuImageOesFilter;
 
     private volatile Handler mHandler = null;
 
     private WindowSurface mOutputWindowSurface;
     private int mOutputWidth = -1;
     private int mOutputHeight = -1;
+
+    private Surface mInputSurface;
 
     public GpuImageFilterRenderThread(String name) {
         super(name);
@@ -68,15 +64,24 @@ public class GpuImageFilterRenderThread extends HandlerThread {
         checkThread();
 
         mEglCore = new EglCore(null, 0);
+
+        mGpuImageOesFilter = new GpuImageOesFilter();
+
+        // TODO, should compute matrix every time drawing occurs
+        MatrixUtils.flip(mGpuImageOesFilter.getVertexMatrix(), false, true);
+
+        mGLCubeBuffer = GpuImageUtil.createCubeBuffer();
+
+        mGLTextureBuffer = GpuImageUtil.createTextureBuffer();
     }
 
     private void drawToOutput() {
-        if (mGpuImageFilter != null && mOutputWindowSurface != null) {
+        if (mGPUImageFilterGroup != null && mOutputWindowSurface != null) {
             GlUtil.checkGlError("draw start: " + mOutputWindowSurface.hashCode());
 
             mOutputWindowSurface.makeCurrent();
 
-            mGpuImageFilter.onDraw(mInputTextureId, mGLCubeBuffer, mGLTextureBuffer);
+            mGPUImageFilterGroup.onDraw(mInputTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
             mOutputWindowSurface.swapBuffers();
 
@@ -85,6 +90,7 @@ public class GpuImageFilterRenderThread extends HandlerThread {
     }
 
     public void setOutputSurface(final Surface surface, final int width, final int height) {
+        Log.d(TAG, String.format("setOutputSurface, size: %1$dx%2$d", width, height));
         checkRunning();
 
         mHandler.post(new Runnable() {
@@ -96,18 +102,16 @@ public class GpuImageFilterRenderThread extends HandlerThread {
                 mInputTextureId = GlUtil.createTextureObject(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
                 mInputSurfaceTexture = new SurfaceTexture(mInputTextureId);
 
-                mGLCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
-                        .order(ByteOrder.nativeOrder())
-                        .asFloatBuffer();
-                mGLCubeBuffer.put(CUBE).position(0);
+                mInputSurfaceTexture.setDefaultBufferSize(width, height);
 
-                mGLTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
-                        .order(ByteOrder.nativeOrder())
-                        .asFloatBuffer();
-                mGLTextureBuffer.put(TEXTURE_NO_ROTATION).position(0);
+                if (mCallback != null) {
+                    Surface oldSurface = mInputSurface;
 
-                if (mCallback != null)
-                    mCallback.onInputSurfaceReady(new Surface(mInputSurfaceTexture));
+                    mInputSurface = new Surface(mInputSurfaceTexture);
+                    mCallback.onInputSurfaceReady(mInputSurface, oldSurface);
+
+                    if (oldSurface != null) oldSurface.release();
+                }
 
                 mInputSurfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
                     @Override
@@ -115,13 +119,33 @@ public class GpuImageFilterRenderThread extends HandlerThread {
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
-//                                Log.d(TAG, "updateTexImage, thread: " + Thread.currentThread().getName());
+//                                if (BuildConfig.DEBUG)
+//                                    Log.d(TAG, "updateTexImage, thread: " + Thread.currentThread().getName());
                                 mInputSurfaceTexture.updateTexImage();
+                                mInputSurfaceTexture.getTransformMatrix(mGpuImageOesFilter.getTextureMatrix());
                                 drawToOutput();
                             }
                         });
                     }
                 });
+            }
+        });
+    }
+
+    public void setOutputSize(final int width, final int height) {
+        Log.d(TAG, String.format("setOutputSize, size: %1$dx%2$d", width, height));
+        checkRunning();
+
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                doSetOutputSize(width, height);
+
+                mInputSurfaceTexture.setDefaultBufferSize(mOutputWidth, mOutputHeight);
+
+                if (mCallback != null) {
+                    mCallback.onInputSurfaceSizeChanged();
+                }
             }
         });
     }
@@ -136,6 +160,9 @@ public class GpuImageFilterRenderThread extends HandlerThread {
                     mOutputWindowSurface.release();
                     mOutputWindowSurface = null;
                 }
+
+                mInputSurfaceTexture.setOnFrameAvailableListener(null);
+                mInputSurfaceTexture.release();
             }
         });
     }
@@ -151,11 +178,15 @@ public class GpuImageFilterRenderThread extends HandlerThread {
 
         mOutputWindowSurface.makeCurrent();
 
+        doSetOutputSize(width, height);
+    }
+
+    private void doSetOutputSize(int width, int height) {
         mOutputWidth = width;
         mOutputHeight = height;
 
-        if (mGpuImageFilter != null) {
-            mGpuImageFilter.onOutputSizeChanged(width, height);
+        if (mGPUImageFilterGroup != null) {
+            mGPUImageFilterGroup.onOutputSizeChanged(width, height);
         }
     }
 
@@ -172,17 +203,30 @@ public class GpuImageFilterRenderThread extends HandlerThread {
     }
 
     public void setFilter(final GPUImageFilter filter) {
+        Log.d(TAG, "setFilter: " + filter);
+
         checkRunning();
 
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                mGpuImageFilter = filter;
+                if (mGPUImageFilterGroup != null) {
+                    mGPUImageFilterGroup.destroy();
+                }
 
-                if (!mGpuImageFilter.isInitialized()) mGpuImageFilter.init();
+                mGPUImageFilterGroup = new GPUImageFilterGroup();
+                mGPUImageFilterGroup.addFilter(mGpuImageOesFilter);
+
+                if (filter != null) mGPUImageFilterGroup.addFilter(filter);
+
+                if (!mGPUImageFilterGroup.isInitialized()) mGPUImageFilterGroup.init();
 
                 if (mOutputWidth > 0 && mOutputHeight > 0) {
-                    mGpuImageFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
+                    mGPUImageFilterGroup.onOutputSizeChanged(mOutputWidth, mOutputHeight);
+                }
+
+                if (mInputSurfaceTexture != null && mOutputWindowSurface != null) {
+                    drawToOutput();
                 }
             }
         });
@@ -196,17 +240,65 @@ public class GpuImageFilterRenderThread extends HandlerThread {
             public void run() {
                 mEglCore.release();
                 quitSafely();
+
+                if (mGPUImageFilterGroup != null) {
+                    mGPUImageFilterGroup.destroy();
+                    mGPUImageFilterGroup = null;
+                }
+            }
+        });
+    }
+
+    public Surface getInputSurface() {
+        return mInputSurface;
+    }
+
+    public void setFilterIntensity(final float intensity) {
+        Log.d(TAG, "setFilterIntensity: " + intensity);
+        checkRunning();
+
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                boolean changed = false;
+
+                if (mGPUImageFilterGroup != null) {
+                    final List<GPUImageFilter> mergedFilters = mGPUImageFilterGroup.getMergedFilters();
+
+                    if (mergedFilters != null) {
+                        for (GPUImageFilter filter : mergedFilters) {
+                            if (filter instanceof GPUImageLookupFilter2) {
+                                ((GPUImageLookupFilter2) filter).setIntensity(intensity);
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+
+                if (changed) {
+                    if (mInputSurfaceTexture != null && mOutputWindowSurface != null) {
+                        drawToOutput();
+                    }
+                }
             }
         });
     }
 
     public interface Callback {
-        void onInputSurfaceReady(Surface surface);
+        void onInputSurfaceReady(Surface surface, Surface oldSurface);
+
+        void onInputSurfaceSizeChanged();
     }
 
     private Callback mCallback;
 
     public void setCallback(Callback listener) {
         mCallback = listener;
+    }
+
+    public void runOnGLThread(Runnable runnable) {
+        checkRunning();
+
+        mHandler.post(runnable);
     }
 }
