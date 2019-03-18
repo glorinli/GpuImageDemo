@@ -9,7 +9,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Surface;
 import android.view.TextureView;
 
+import jp.co.cyberagent.android.gpuimage.GPUImageGaussianBlurFilter;
 import xyz.dogold.gpuimagedemo.filters.GPUImageLookupFilter2;
+import xyz.dogold.gpuimagedemo.filters.GpuImageStickImageFilter;
 
 public class MainActivity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
     private GpuImageFilterRenderThread mGpuImageFilterRenderThread;
@@ -41,9 +43,11 @@ public class MainActivity extends AppCompatActivity implements TextureView.Surfa
 
 //                mGpuImageFilterRenderThread.setFilter(new GPUImageGrayscaleFilter());
 
-                final GPUImageLookupFilter2 gpuImageLookupFilter2 = new GPUImageLookupFilter2();
+                /*final GPUImageLookupFilter2 gpuImageLookupFilter2 = new GPUImageLookupFilter2();
                 gpuImageLookupFilter2.setBitmap(BitmapFactory.decodeResource(getResources(), R.raw.overlaymap));
-                mGpuImageFilterRenderThread.setFilter(gpuImageLookupFilter2);
+                mGpuImageFilterRenderThread.setFilter(gpuImageLookupFilter2);*/
+
+                mGpuImageFilterRenderThread.setFilter(new GPUImageGaussianBlurFilter(10f));
 
                 mMediaPlayer.setSurface(surface);
 
