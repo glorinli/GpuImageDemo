@@ -11,12 +11,14 @@
         <Button
             android:id="@+id/btnImageFilter"
             android:text="图片滤镜"
+            android:onClick="onClick"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <Button
             android:id="@+id/btnVideoFilter"
             android:text="视频滤镜"
+            android:onClick="onClick"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </LinearLayout>
