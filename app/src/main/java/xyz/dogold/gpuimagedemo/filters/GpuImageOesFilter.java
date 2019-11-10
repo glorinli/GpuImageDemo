@@ -5,8 +5,8 @@ import android.opengl.GLES20;
 
 import java.nio.FloatBuffer;
 
-import jp.co.cyberagent.android.gpuimage.GPUImageFilter;
-import jp.co.cyberagent.android.gpuimage.OpenGlUtils;
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
+import jp.co.cyberagent.android.gpuimage.util.OpenGlUtils;
 import xyz.dogold.gpuimagedemo.gles.MatrixUtils;
 
 public class GpuImageOesFilter extends GPUImageFilter {
@@ -44,14 +44,14 @@ public class GpuImageOesFilter extends GPUImageFilter {
     public void onInit() {
         super.onInit();
 
-        mGLTextureMatrix = GLES20.glGetUniformLocation(mGLProgId, "textureMatrix");
-        mGLVertexMatrix = GLES20.glGetUniformLocation(mGLProgId, "vertextMatrix");
+        mGLTextureMatrix = GLES20.glGetUniformLocation(getProgram(), "textureMatrix");
+        mGLVertexMatrix = GLES20.glGetUniformLocation(getProgram(), "vertextMatrix");
     }
 
     @Override
     public void onDraw(final int textureId, final FloatBuffer cubeBuffer,
                        final FloatBuffer textureBuffer) {
-        GLES20.glUseProgram(mGLProgId);
+        GLES20.glUseProgram(getProgram());
         runPendingOnDrawTasks();
 
         if (!isInitialized()) {
@@ -62,21 +62,21 @@ public class GpuImageOesFilter extends GPUImageFilter {
         GLES20.glUniformMatrix4fv(mGLVertexMatrix, 1, false, mVertexMatrix, 0);
 
         cubeBuffer.position(0);
-        GLES20.glVertexAttribPointer(mGLAttribPosition, 2, GLES20.GL_FLOAT, false, 0, cubeBuffer);
-        GLES20.glEnableVertexAttribArray(mGLAttribPosition);
+        GLES20.glVertexAttribPointer(getAttribPosition(), 2, GLES20.GL_FLOAT, false, 0, cubeBuffer);
+        GLES20.glEnableVertexAttribArray(getAttribPosition());
         textureBuffer.position(0);
-        GLES20.glVertexAttribPointer(mGLAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 0,
+        GLES20.glVertexAttribPointer(getAttribTextureCoordinate(), 2, GLES20.GL_FLOAT, false, 0,
                 textureBuffer);
-        GLES20.glEnableVertexAttribArray(mGLAttribTextureCoordinate);
+        GLES20.glEnableVertexAttribArray(getAttribTextureCoordinate());
         if (textureId != OpenGlUtils.NO_TEXTURE) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
-            GLES20.glUniform1i(mGLUniformTexture, 0);
+            GLES20.glUniform1i(getUniformTexture(), 0);
         }
         onDrawArraysPre();
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        GLES20.glDisableVertexAttribArray(mGLAttribPosition);
-        GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
+        GLES20.glDisableVertexAttribArray(getAttribPosition());
+        GLES20.glDisableVertexAttribArray(getAttribTextureCoordinate());
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
     }

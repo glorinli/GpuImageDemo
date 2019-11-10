@@ -10,8 +10,8 @@ import android.view.Surface;
 import java.nio.FloatBuffer;
 import java.util.List;
 
-import jp.co.cyberagent.android.gpuimage.GPUImageFilter;
-import jp.co.cyberagent.android.gpuimage.GPUImageFilterGroup;
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilterGroup;
 import xyz.dogold.gpuimagedemo.filters.GPUImageLookupFilter2;
 import xyz.dogold.gpuimagedemo.filters.GpuImageOesFilter;
 import xyz.dogold.gpuimagedemo.gles.EglCore;
@@ -219,7 +219,7 @@ public class GpuImageFilterRenderThread extends HandlerThread {
 
                 if (filter != null) mGPUImageFilterGroup.addFilter(filter);
 
-                if (!mGPUImageFilterGroup.isInitialized()) mGPUImageFilterGroup.init();
+                if (!mGPUImageFilterGroup.isInitialized()) mGPUImageFilterGroup.ifNeedInit();
 
                 if (mOutputWidth > 0 && mOutputHeight > 0) {
                     mGPUImageFilterGroup.onOutputSizeChanged(mOutputWidth, mOutputHeight);
